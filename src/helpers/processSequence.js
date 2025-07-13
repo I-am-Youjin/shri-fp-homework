@@ -1,51 +1,65 @@
-/**
- * @file Домашка по FP ч. 2
- *
- * Подсказки:
- * Метод get у инстанса Api – каррированый
- * GET / https://animals.tech/{id}
- *
- * GET / https://api.tech/numbers/base
- * params:
- * – number [Int] – число
- * – from [Int] – из какой системы счисления
- * – to [Int] – в какую систему счисления
- *
- * Иногда промисы от API будут приходить в состояние rejected, (прямо как и API в реальной жизни)
- * Ответ будет приходить в поле {result}
- */
- import Api from '../tools/api';
+import Api from "../tools/api";
+import { pipe, tap, ifElse, allPass, length, test } from "ramda";
 
- const api = new Api();
+const api = new Api();
 
- /**
-  * Я – пример, удали меня
-  */
- const wait = time => new Promise(resolve => {
-     setTimeout(resolve, time);
- })
+const isValidNumberString = allPass([
+  test(/^[0-9.]+$/),
+  (s) => (s.match(/\./g) || []).length <= 1,
+  (s) => length(s) >= 2,
+  (s) => length(s) <= 10,
+  (s) => parseFloat(s) > 0,
+]);
 
- const processSequence = ({value, writeLog, handleSuccess, handleError}) => {
-     /**
-      * Я – пример, удали меня
-      */
-     writeLog(value);
+const round = Math.round;
 
-     api.get('https://api.tech/numbers/base', {from: 2, to: 10, number: '01011010101'}).then(({result}) => {
-         writeLog(result);
-     });
+const convertToBinary = (number) =>
+  api.get("https://api.tech/numbers/base", {
+    from: 10,
+    to: 2,
+    number,
+  });
 
-     wait(2500).then(() => {
-         writeLog('SecondLog')
+const getAnimalById = (id) => api.get(`https://animals.tech/${id}`);
 
-         return wait(1500);
-     }).then(() => {
-         writeLog('ThirdLog');
+const processSequence = ({ value, writeLog, handleSuccess, handleError }) => {
+  const log = tap(writeLog);
 
-         return wait(400);
-     }).then(() => {
-         handleSuccess('Done');
-     });
- }
+  const handleValidValue = pipe(log, parseFloat, round, log, (rounded) =>
+    convertToBinary(rounded)
+      .then(({ result: binary }) => {
+        log(binary);
+
+        const len = binary.length;
+        log(len);
+
+        const squared = len ** 2;
+        log(squared);
+
+        const remainder = squared % 3;
+        log(remainder);
+
+        return getAnimalById(remainder);
+      })
+      .then(({ result }) => {
+        if (!result) {
+          handleError("Animal API вернул пустой результат");
+          return;
+        }
+
+        handleSuccess(result);
+      })
+      .catch((err) => {
+        const errorMessage = err instanceof Error ? err.message : String(err);
+        handleError(errorMessage);
+      })
+  );
+
+  const handle = ifElse(isValidNumberString, handleValidValue, () =>
+    handleError("ValidationError")
+  );
+
+  handle(value);
+};
 
 export default processSequence;

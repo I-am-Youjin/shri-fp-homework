@@ -1,50 +1,59 @@
-/**
- * @file Домашка по FP ч. 1
- *
- * Основная задача — написать самому, или найти в FP библиотеках функции anyPass/allPass
- * Эти функции/их аналоги есть и в ramda и в lodash
- *
- * allPass — принимает массив функций-предикатов, и возвращает функцию-предикат, которая
- * вернет true для заданного списка аргументов, если каждый из предоставленных предикатов
- * удовлетворяет этим аргументам (возвращает true)
- *
- * anyPass — то же самое, только удовлетворять значению может единственная функция-предикат из массива.
- *
- * Если какие либо функции написаны руками (без использования библиотек) это не является ошибкой
- */
+import {
+  every,
+  some,
+  filter,
+  size,
+  countBy,
+  values,
+  flow,
+  negate,
+  includes,
+} from "lodash";
 
-// 1. Красная звезда, зеленый квадрат, все остальные белые.
-export const validateFieldN1 = ({star, square, triangle, circle}) => {
-    if (triangle !== 'white' || circle !== 'white') {
-        return false;
-    }
+const isWhite = (color) => color === "white";
+const isRed = (color) => color === "red";
+const isGreen = (color) => color === "green";
+const isBlue = (color) => color === "blue";
+const isOrange = (color) => color === "orange";
+const isNotWhite = (color) => color !== "white";
+const isNotRed = (color) => color !== "red";
+const isNotRedOrWhite = (color) => !includes(["red", "white"], color);
 
-    return star === 'red' && square === 'green';
+export const validateFieldN1 = (obj) =>
+  isRed(obj.star) &&
+  isGreen(obj.square) &&
+  isWhite(obj.triangle) &&
+  isWhite(obj.circle);
+
+export const validateFieldN2 = (obj) =>
+  size(filter(Object.values(obj), isGreen)) >= 2;
+
+export const validateFieldN3 = (obj) => {
+  const colors = Object.values(obj);
+  return size(filter(colors, isRed)) === size(filter(colors, isBlue));
 };
 
-// 2. Как минимум две фигуры зеленые.
-export const validateFieldN2 = () => false;
+export const validateFieldN4 = (obj) =>
+  isBlue(obj.circle) && isRed(obj.star) && isOrange(obj.square);
 
-// 3. Количество красных фигур равно кол-ву синих.
-export const validateFieldN3 = () => false;
+export const validateFieldN5 = (obj) => {
+  const colorCounts = countBy(Object.values(obj));
+  delete colorCounts.white; // Игнорируем белый цвет
+  return some(colorCounts, (count) => count >= 3);
+};
 
-// 4. Синий круг, красная звезда, оранжевый квадрат треугольник любого цвета
-export const validateFieldN4 = () => false;
+export const validateFieldN6 = (obj) => {
+  const colors = Object.values(obj);
+  const greenCount = size(filter(colors, isGreen));
+  const redCount = size(filter(colors, isRed));
+  return greenCount === 2 && isGreen(obj.triangle) && redCount === 1;
+};
 
-// 5. Три фигуры одного любого цвета кроме белого (четыре фигуры одного цвета – это тоже true).
-export const validateFieldN5 = () => false;
+export const validateFieldN7 = (obj) => every(Object.values(obj), isOrange);
 
-// 6. Ровно две зеленые фигуры (одна из зелёных – это треугольник), плюс одна красная. Четвёртая оставшаяся любого доступного цвета, но не нарушающая первые два условия
-export const validateFieldN6 = () => false;
+export const validateFieldN8 = (obj) => isNotRedOrWhite(obj.star);
 
-// 7. Все фигуры оранжевые.
-export const validateFieldN7 = () => false;
+export const validateFieldN9 = (obj) => every(Object.values(obj), isGreen);
 
-// 8. Не красная и не белая звезда, остальные – любого цвета.
-export const validateFieldN8 = () => false;
-
-// 9. Все фигуры зеленые.
-export const validateFieldN9 = () => false;
-
-// 10. Треугольник и квадрат одного цвета (не белого), остальные – любого цвета
-export const validateFieldN10 = () => false;
+export const validateFieldN10 = (obj) =>
+  obj.square === obj.triangle && isNotWhite(obj.square);
